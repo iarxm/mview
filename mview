@@ -1,0 +1,145 @@
+#!/bin/env bash
+
+# mail@iarom.org Iarom Madden
+
+_ini() {
+
+    declare -rg cmd=${1} && shift 1
+
+    declare -rg bname="mview"
+    declare -rg dir_ru="/run/user/${UID}/mutt"
+    declare -rg dir_ri="/run/user/${UID}/mutt/rip"
+    declare -rg fil_mdx="${dir_ru}/${bname}-x.md"
+    declare -rg fil_mix="${dir_ru}/${bname}-x.mime"
+    declare -rg fil_hlx="${dir_ru}/${bname}-x.html"
+    declare -rg fil_hly="${dir_ru}/${bname}-y.html"
+    
+    declare -rg fil_hlr0="${dir_ri}/text-html0"
+    declare -rg fil_hlr1="${dir_ri}/text-html1"
+    declare -rg fil_hlr2="${dir_ri}/text-html2"
+    declare -rg fil_txt1="${dir_ri}/text-plain0"
+    declare -rg fil_txt3="${dir_ri}/text-plain1"
+    declare -rg fil_txt2="${dir_ri}/textfile0"
+
+    declare -rg browser_cur="qb m"
+    declare -rg browser_wnf="qb fl"
+    declare -rg browser_qmx="qb mx"
+    declare -rg browser_qmy="qb my"
+
+    : ${FIFO_X:="${dir_ru}/fifo"}
+    : ${FIFO_GUARD:="${dir_ru}/fifo-guard"}
+
+    mkdir -p "${dir_ru}" "${dir_ri}"
+}
+    #browser_win="$BROWSER_WIN"
+    #fil_hlr2="${dir_ri}/textfile2"
+    #htmy="${dir_ri}/mlx.html"
+
+_prn_uid() { printf "%s\n" "${UID}"; }
+
+
+# browsing 
+
+_btr()     { elinks "${fil_hlx}" & } # term; task: issue in a st window?
+#_bfx()     { $browser_wnf "file://${mailf}" ; } # float
+_brx()     { $browser_qmx & }
+_bry()     { $browser_qmy & }
+
+
+# piping 
+
+_pip_brx() {
+
+    #mv ${dir_ri}/* "${dir_ri}/ztodelete/"
+    ripmime --name-by-type --overwrite -d "${dir_ri}" -i -
+    mv "${fil_hlr2}" "${fil_hlx}" > /dev/null 2>&1 &
+    _brx > /dev/null 2>&1 &
+}
+
+
+_txt2html() { pandoc --quiet -s -f markdown -t html5 -o ${fil_hlx} ${1}; }
+
+
+_clean() { rm -f "$FIFO_X" "$FIFO_GUARD"; exit 0;}
+
+
+_listen() {
+    
+    trap _clean SIGINT SIGTERM
+
+    #rm -f "${FIFO_X:="/tmp/mutt-fifo"}"
+
+    [ -p "${FIFO_X}" ] && exit 0
+    [ -f "${FIFO_X}" ] && [ ! -p "${FIFO_X}" ] && rm "${FIFO_X}"
+
+    mkfifo "${FIFO_X}" >/dev/null 2>&1
+    mkfifo "${FIFO_GUARD}" >/dev/null 2>&1
+
+    #mkfifo "${fifo_log:="/tmp/fifo-log"}"
+    
+    >"${FIFO_X}" <"${FIFO_GUARD}" & # guard: prevents eof closes on reader
+    #>"${fifo_log}" <"${FIFO_GUARD2}" & # guard: prevents eof closes on reader
+
+    while read -r x ; do
+        
+        timeout 0.1 cat "${FIFO_X}" > /dev/null 2>&1 # interupt que
+        ripmime --name-by-type --overwrite -d "${dir_ri}" -i "${fil_mix}"
+
+        if [ -e "${fil_hlr2}" ]; then
+            mv "${fil_hlr2}" "${fil_hlx}" > /dev/null 2>&1
+        
+        elif [ -e "${fil_hlr0}" ]; then
+            mv "${fil_hlr0}" "${fil_hlx}" > /dev/null 2>&1
+
+        elif [ -e "${fil_hlr1}" ]; then
+            mv "${fil_hlr1}" "${fil_hlx}" > /dev/null 2>&1
+        
+        elif [ -e "${fil_txt2}" ]; then
+            #mv "${fil_txt2}" "${fil_hlx}" > /dev/null 2>&1
+            _txt2html "${fil_txt2}"
+        
+        elif [ -e "${fil_txt3}" ]; then
+            #mv "${fil_txt3}" "${fil_hlx}" > /dev/null 2>&1
+            _txt2html "${fil_txt3}"
+
+        elif [ -e "${fil_txt1}" ]; then
+            #mv "${fil_txt1}" "${fil_hlx}" > /dev/null 2>&1 &
+            _txt2html "${fil_txt1}"
+
+        fi
+
+        _brx > /dev/null 2>&1 &
+
+        rm -R ${dir_ri}/* > /dev/null 2>&1
+        
+        sleep 0.3
+
+    done < "${FIFO_X}"
+    
+    _clean
+}
+
+
+_main() {
+
+    _ini ${@}
+
+    case ${cmd} in
+        # todo: standardise names
+        uid)          _prn_uid ;;
+        qb-rip)       _listen ;;
+        qb-rip-y)     _pip_brx  ${@} ;;
+        brx)          _brx ;;
+        bry)          _bry ;;
+        b-qb-float)   _bfx ;;
+        b-term)       _btr ;;
+        b-term_view)  _term_view ;; # md vew variation
+    esac
+}
+
+
+_main "${@}"
+
+#_bry()     { $browser_win "${fil_hlx}" & sleep 0.5s; }
+#_brx()     { $browser_win "${fil_hlr2}" & sleep 0.5s; }
+

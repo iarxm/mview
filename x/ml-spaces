@@ -1,0 +1,8 @@
+#!/bin/bash
+WIDTH=$(tput cols)
+SPACES_COUNT=$(( ( WIDTH - 72 ) / 2 - 5))
+[ $SPACES_COUNT -lt 0 ] && SPACES_COUNT=0
+SPACES=$(printf '%*s' $SPACES_COUNT)
+while IFS= read -r line; do
+    echo "${SPACES}${line}"
+done
