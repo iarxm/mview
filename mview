@@ -5,8 +5,8 @@
 # hlx for loop
 # hly for manual calls
 
-_ini() {
-
+_i()
+{
     declare -rg cmd=${1} && shift 1
 
     declare -rg bname="mview"
@@ -30,22 +30,18 @@ _ini() {
     mkdir -p "${dir_ru}" "${dir_ri}"
 }
 
-
 _prn_uid() { printf "%s\n" "${UID}"; }
-
-
 _btr()     { elinks "${fil_hly}" & } # term; task: issue in a st window?
 _bfl()     { qb fl "file://${fil_hly}" ; } # float
 _brx()     { qb mx & }
 _bry()     { qb my & }
 #_bry()     { $browser_win "${fil_hlx}" & sleep 0.5s; }
 #_brx()     { $browser_win "${fil_hlr2}" & sleep 0.5s; }
-
 #consider transforming -y.html with iconv if any encoding issues
 #iconv -c --to-code=UTF8
 
-_pip_brx() {
-
+_pip_brx()
+{
     #mv ${dir_ri}/* "${dir_ri}/ztodelete/"
     ripmime --name-by-type --overwrite -d "${dir_ri}" -i -
     mv "${fil_hlr2}" "${fil_hlx}" > /dev/null 2>&1 &
@@ -55,12 +51,10 @@ _pip_brx() {
 
 _txt2html() { pandoc --quiet -s -f markdown -t html5 -o ${fil_hlx} ${1}; }
 
-
 _clean() { rm -f "$FIFO_X" "$FIFO_GUARD"; exit 0;}
 
-
-_listen() {
-    
+_listen()
+{
     trap _clean SIGINT SIGTERM
 
     #rm -f "${FIFO_X:="/tmp/mutt-fifo"}"
@@ -115,10 +109,9 @@ _listen() {
     _clean
 }
 
-
-_main() {
-
-    _ini ${@}
+_m()
+{
+    _i ${@}
 
     case ${cmd} in
         # todo: standardise names
@@ -133,7 +126,4 @@ _main() {
     esac
 }
 
-
-_main "${@}"
-
-
+_m "${@}"
